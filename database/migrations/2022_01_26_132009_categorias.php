@@ -15,9 +15,9 @@ class Categorias extends Migration
     {
         Schema::create('categorias', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre');
-            $table->string('descripcion');
-            // crear relacion con usuario y productos
+            $table->string('nombre', 100);
+            $table->string('descripcion')->longText();
+            
         });
     }
 

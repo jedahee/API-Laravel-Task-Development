@@ -15,10 +15,15 @@ class Pujas extends Migration
     {
         Schema::create('pujas', function (Blueprint $table) {
             $table->id();
-            //$table->id de usuario
-            //$table->id de producto
-            $table->double('dineroPujado');
+            $table->unsignedInteger('prod_id');
+            $table->unsignedInteger('usuario_id');
+            $table->decimal('dineroPujado');
             $table->timestamps();
+
+            // Relaciones
+            $table->foreign('prod_id')->references('id')->on('productos');
+            $table->foreign('usuario_id')->references('id')->on('usuarios');
+
         });
     }
 

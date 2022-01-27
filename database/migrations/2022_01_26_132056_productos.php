@@ -15,12 +15,17 @@ class Productos extends Migration
     {
         Schema::create('productos', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre');
-            $table->string('descripcion');
-            $table->double('precioInicial');
+            $table->string('nombre', 100);
+            $table->string('descripcion')->longText();
+            $table->decimal('precioInicial');
             $table->integer('numMax');
-            // crear relacion con usuario
             $table->timestamps();
+            // cambiar unsignedbiginteger
+            $table->unsignedInteger('categoria_id');
+            $table->unsignedInteger('usuario_id');
+            // Relaciones
+            $table->foreign('categoria_id')->references('id')->on('categorias');
+            $table->foreign('usuario_id')->references('id')->on('usuarios');
         });
     }
 
