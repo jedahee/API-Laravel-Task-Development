@@ -39,7 +39,7 @@ class AuthController extends Controller
 
         //Creamos el nuevo usuario
         $user = User::create([
-            'nombre' => $request->name,
+            'nombre' => $request->nombre,
             'email' => $request->email,
             'apellidos' => $request->apellidos,
             'password' => bcrypt($request->password)
@@ -136,7 +136,6 @@ class AuthController extends Controller
 
     */
 
-    //Función que utilizaremos para obtener los datos del usuario y validar si el token ha expirado.
     public function getUser(Request $request) {
         //Validamos que la request tenga el token
         $this->validate($request, [
