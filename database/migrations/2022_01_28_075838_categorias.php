@@ -17,7 +17,7 @@ class Categorias extends Migration
             $table->id();
             $table->string('nombre', 100);
             $table->string('descripcion')->longText();
-            
+
         });
     }
 

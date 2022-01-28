@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class Pujas extends Migration
+class Productos extends Migration
 {
     /**
      * Run the migrations.
@@ -13,17 +13,19 @@ class Pujas extends Migration
      */
     public function up()
     {
-        Schema::create('pujas', function (Blueprint $table) {
+        Schema::create('productos', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('prod_id');
-            $table->unsignedInteger('usuario_id');
-            $table->decimal('dineroPujado');
+            $table->string('nombre', 100);
+            $table->string('descripcion')->longText();
+            $table->decimal('precioInicial');
+            $table->integer('numMax');
             $table->timestamps();
 
+            $table->unsignedBigInteger('categoria_id');
+            $table->unsignedBigInteger('usuario_id');
             // Relaciones
-            $table->foreign('prod_id')->references('id')->on('productos');
+            $table->foreign('categoria_id')->references('id')->on('categorias');
             $table->foreign('usuario_id')->references('id')->on('usuarios');
-
         });
     }
 
@@ -34,6 +36,6 @@ class Pujas extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('pujas');
+        Schema::dropIfExists('productos');
     }
 }
