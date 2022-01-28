@@ -22,10 +22,10 @@ class Productos extends Migration
             $table->timestamps();
 
             $table->unsignedBigInteger('categoria_id');
-            $table->unsignedBigInteger('usuario_id');
+            $table->unsignedBigInteger('user_id');
             // Relaciones
             $table->foreign('categoria_id')->references('id')->on('categorias');
-            $table->foreign('usuario_id')->references('id')->on('usuarios');
+            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 

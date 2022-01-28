@@ -16,13 +16,13 @@ class Pujas extends Migration
         Schema::create('pujas', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('prod_id');
-            $table->unsignedBigInteger('usuario_id');
+            $table->unsignedBigInteger('user_id');
             $table->decimal('dineroPujado');
             $table->timestamps();
 
             // Relaciones
             $table->foreign('prod_id')->references('id')->on('productos');
-            $table->foreign('usuario_id')->references('id')->on('usuarios');
+            $table->foreign('user_id')->references('id')->on('users');
 
         });
     }
@@ -34,6 +34,6 @@ class Pujas extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('pujas');
+        //
     }
 }
