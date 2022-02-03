@@ -26,7 +26,7 @@ class AuthController extends Controller
 
         //Realizamos las validaciones
         $validator = Validator::make($data, [
-            'nombre' => 'required|string',
+            'nombre' => 'required|string|max:50',
             'apellidos' => 'required|string',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6|max:50',

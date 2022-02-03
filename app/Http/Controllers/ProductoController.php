@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
+use App\Models\Categoria;
+use App\Models\Producto;
+use App\Models\Puja;
 use Illuminate\Http\Request;
+use JWTAuth;
+use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Validator;
 
 class ProductoController extends Controller
 {
-    namespace App\Http\Controllers;
-    use App\Http\Controllers\Controller;
-    use App\Models\Categoria;
-    use Illuminate\Http\Request;
-    use JWTAuth;
-    use Symfony\Component\HttpFoundation\Response;
-    use Illuminate\Support\Facades\Validator;
 
     protected $user;
-    
+
     public function __construct(Request $request)
     {
         $token = $request->header('Authorization');
@@ -32,7 +32,6 @@ class ProductoController extends Controller
     {
         //Listamos todos los productos
         $productos = Producto::get();
-        // HACER FOREACH A TODAS LAS CATEGORIAS Y ANADIRLE SUS PRODUCTOS
         return response()->json($productos);
     }
 
@@ -45,14 +44,14 @@ class ProductoController extends Controller
     public function store(Request $request)
     {
         //Validamos los datos
-        $data = $request->only('nombre', 'descripcion', 'precioInicial', 'numMax', 'user_id');
-        
+        $data = $request->only('nombre', 'descripcion', 'precioInicial', 'numMax', 'categoria_id');
+
         $validator = Validator::make($data, [
             'nombre' => 'required|min:5|max:100|string',
             'descripcion' => 'required|max:100|string',
             'precioInicial' => 'required|min:0|integer',
-            'numMax' => 'required|min:10|max:1000|integer'
-            'user_id' => 'required|integer'
+            'numMax' => 'required|min:10|max:1000|integer',
+            'categoria_id' => 'required|integer',
         ]);
         //Si falla la validación
         if ($validator->fails()) {
@@ -65,7 +64,8 @@ class ProductoController extends Controller
             'descripcion' => $request->descripcion,
             'precioInicial' => $request->precioInicial,
             'numMax' => $request->numMax,
-            'user_id' => $request->user_id
+            'categoria_id' => $request->categoria_id,
+            'user_id' => $this->user->id,
         ]);
         //Respuesta en caso de que todo vaya bien.
         return response()->json([
@@ -103,38 +103,56 @@ class ProductoController extends Controller
     */
     public function update(Request $request, $id)
     {
-        // ------------- SOLO SI NNO HAY PRODUCTOS ASOCIADOS -------------
+        // ------------- SOLO SI NO HAY PUJAS ASOCIADAS -------------
         //Validación de datos
-        $data = $request->only('name', 'description', 'stock');
-        
+        $data = $request->only('nombre', 'descripcion', 'precioInicial', 'numMax', 'categoria_id');
+
         $validator = Validator::make($data, [
             'nombre' => 'required|min:5|max:100|string',
             'descripcion' => 'required|max:100|string',
             'precioInicial' => 'required|min:0|integer',
-            'numMax' => 'required|min:10|max:1000|integer'
-            'user_id' => 'required|integer'
+            'numMax' => 'required|min:10|max:1000|integer',
+            'categoria_id' => 'required|integer',
         ]);
-        
+
         //Si falla la validación
         if ($validator->fails()) {
             return response()->json(['error' =>
             $validator->messages()], 400);
         }
+
         //Buscamos el producto
-        $producto = Categoria::findOrfail($id);
-        //Actualizamos el producto.
-        $producto->update([
-            'nombre' => $request->nombre,
-            'descripcion' => $request->descripcion,
-            'precioInicial' => $request->precioInicial,
-            'numMax' => $request->numMax,
-            'user_id' => $request->user_id
-        ]);
-        //Devolvemos los datos actualizados.
-        return response()->json([
-            'message' => 'Producto actualizado correctamente',
-            'data' => $producto
-        ], Response::HTTP_OK);
+        $producto = Producto::findOrfail($id);
+        $pujasProducto = Puja::where('prod_id', '=', $id)->get();
+
+        if (count($pujasProducto) <= 0) {
+            if ($this->user->id == $producto->user_id) {
+
+                //Actualizamos el producto.
+                $producto->update([
+                    'nombre' => $request->nombre,
+                    'descripcion' => $request->descripcion,
+                    'precioInicial' => $request->precioInicial,
+                    'numMax' => $request->numMax,
+                    'categoria_id' => $request->categoria_id,
+                ]);
+                //Devolvemos los datos actualizados.
+                return response()->json([
+                    'message' => 'Producto actualizado correctamente',
+                    'data' => $producto
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'message' => 'El producto no se puede actualizar porque no eres el dueño',
+                ], 404);
+            }
+        } else {
+            return response()->json([
+                'message' => 'El producto no se puede actualizar porque tiene pujas asociadas',
+            ], 404);
+        }
+
+
     }
     /**
     * Remove the specified resource from storage.
@@ -145,13 +163,29 @@ class ProductoController extends Controller
     public function destroy($id)
     {
         // ------------- SOLO SI NNO HAY PRODUCTOS ASOCIADOS -------------
-        //Buscamos el producto
-        $producto = Categoria::findOrfail($id);
-        //Eliminamos el producto
-        $producto->delete();
-        //Devolvemos la respuesta
-        return response()->json([
-            'message' => 'Producto borrado correctamente'
-        ], Response::HTTP_OK);
+        $producto = Producto::findOrfail($id);
+        $pujasProducto = Puja::where('prod_id', '=', $id)->get();
+
+        if (count($pujasProducto) <= 0) {
+            if ($this->user->id == $producto->user_id) {
+                //Buscamos el producto
+                $producto = Producto::findOrfail($id);
+                //Eliminamos el producto
+                $producto->delete();
+                //Devolvemos la respuesta
+                return response()->json([
+                    'message' => 'Producto borrado correctamente'
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'message' => 'El producto no se puede borrar porque no eres el dueño',
+                ], 404);
+            }
+        } else {
+            return response()->json([
+                'message' => 'El producto no se puede borrar porque tiene pujas asociadas',
+            ], 404);
+        }
+
     }
 }

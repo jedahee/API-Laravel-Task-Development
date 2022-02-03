@@ -1,9 +1,9 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Http\Controllers\Controller;
 use App\Models\Categoria;
-use App\Models\Producto;
 use Illuminate\Http\Request;
 use JWTAuth;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Validator;
 class CategoriaController extends Controller
 {
     protected $user;
-    
+
     public function __construct(Request $request)
     {
         $token = $request->header('Authorization');
@@ -28,7 +28,6 @@ class CategoriaController extends Controller
     {
         //Listamos todos los productos
         $categorias = Categoria::get();
-        // HACER FOREACH A TODAS LAS CATEGORIAS Y ANADIRLE SUS PRODUCTOS
         return response()->json($categorias);
     }
 
@@ -78,6 +77,11 @@ class CategoriaController extends Controller
                 'message' => 'Categoria no encontrada.'
             ], 404);
         }
+
+        $productosCategoria = Categoria::find($id)->productos;
+
+        $categoria["productos"] = $productosCategoria;
+
         //Si hay producto lo devolvemos
         return response()->json([
             'data' => $categoria
@@ -93,9 +97,9 @@ class CategoriaController extends Controller
     public function update(Request $request, $id)
     {
         // ------------- SOLO SI NNO HAY PRODUCTOS ASOCIADOS -------------
-        
+
         $products = Producto::where('categoria_id', '=', $id)->get();
-        
+
         if (count($products) <= 0) {
             //Validación de datos
             $data = $request->only('nombre', 'descripcion');
@@ -126,7 +130,7 @@ class CategoriaController extends Controller
             ], 404);
         }
 
-        
+
     }
     /**
     * Remove the specified resource from storage.
