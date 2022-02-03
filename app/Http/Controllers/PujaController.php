@@ -47,11 +47,15 @@ class PujaController extends Controller
     public function listarUltimaPujaProducto() {
         $productos = Producto::get();
         $pujas = [];
+        $i = 0;
 
         foreach ($productos as $producto) {
-            // ----
+            $cantidadPujasProducto = Puja::where('prod_id', $producto->id)->count();
+            $numMaxPujas = Producto::where('user_id', $producto->user_id)->where('id', $producto->id)->get()->last()->numMax;            
+            
             $pujas[] = DB::table('pujas')->where('prod_id', $producto->id)->get()->last();
-
+            $pujas[$i]->puja_abierta = ($cantidadPujasProducto < ($numMaxPujas * 0.1));
+            $i++;
         }
 
         return response()->json($pujas);
@@ -71,7 +75,7 @@ class PujaController extends Controller
         $data = $request->only('dineroPujado');
 
         $validator = Validator::make($data, [
-            'dineroPujado' => 'required|min:0|integer',
+            'dineroPujado' => 'required|regex:/^\d+(.\d{1,2})?$/|min:0|integer',
         ]);
 
         //Si falla la validación
@@ -80,40 +84,54 @@ class PujaController extends Controller
             $validator->messages()], 400);
         }
 
-        // Recoger ultima puja del producto pasado por id para comprobar
-        // si la puja añadida es mayor a la anterior
-        $ultimoDineroPujado = DB::table('pujas')->where('prod_id', $id)->get()->last()->dineroPujado;
+        $hayDatosEnLaTabla = Puja::where('prod_id', $id)->count();
 
-        // Pujas que ha realizado el usuario
-        $pujasRealizadas = DB::table('pujas')->where('user_id', $this->user->id)->get();
+        if (!((bool)$hayDatosEnLaTabla)) {
+            //Creamos la puja en la BD
+            $puja = Puja::create([
+                'dineroPujado' => $request->dineroPujado,
+                'user_id' => $this->user->id,
+                'prod_id' => $id
+            ]);
+            //Respuesta en caso de que todo vaya bien.
+            return response()->json([
+                'message' => 'Puja creada',
+                'data' => $puja
+            ], Response::HTTP_OK);
+        } else {
+            // Recoger ultima puja del producto pasado por id para comprobar
+            // si la puja añadida es mayor a la anterior
+            $ultimoDineroPujado = DB::table('pujas')->where('prod_id', $id)->get()->last()->dineroPujado;
 
-        // Obtener numero maximo de pujas
-        $numMaxPujas = Producto::where('user_id', $this->user->id)->where('id', $id)->get()->last()->numMax;
+            // Pujas que ha realizado el usuario
+            $pujasRealizadas = DB::table('pujas')->where('user_id', $this->user->id)->get();
 
-        return response()->json($numMaxPujas);
+            // Obtener numero maximo de pujas
+            $numMaxPujas = Producto::where('user_id', $this->user->id)->where('id', $id)->get()->last()->numMax;
 
-        if (($request->dineroPujado) > (int)($ultimoDineroPujado)) {
-            if (count($pujasRealizadas) < ($numMaxPujas * 0.1)) {
-                //Creamos la puja en la BD
-                $puja = Puja::create([
-                    'dineroPujado' => $request->dineroPujado,
-                    'user_id' => $this->user->id,
-                    'prod_id' => $id
-                ]);
-                //Respuesta en caso de que todo vaya bien.
-                return response()->json([
-                    'message' => 'Puja creada',
-                    'data' => $puja
-                ], Response::HTTP_OK);
+            if (($request->dineroPujado) > (int)($ultimoDineroPujado)) {
+                if (count($pujasRealizadas) < ($numMaxPujas * 0.1)) {
+                    //Creamos la puja en la BD
+                    $puja = Puja::create([
+                        'dineroPujado' => $request->dineroPujado,
+                        'user_id' => $this->user->id,
+                        'prod_id' => $id
+                    ]);
+                    //Respuesta en caso de que todo vaya bien.
+                    return response()->json([
+                        'message' => 'Puja creada',
+                        'data' => $puja
+                    ], Response::HTTP_OK);
+                } else {
+                    return response()->json([
+                        'message' => 'No se puede crear la puja porque ya has llegado a tu limite',
+                    ], 400);
+                }
             } else {
                 return response()->json([
-                    'message' => 'No se puede crear la puja porque ya has llegado a tu limite',
+                    'message' => 'No se puede crear la puja porque debe ingresar mas dinero que la ultima puja',
                 ], 400);
             }
-        } else {
-            return response()->json([
-                'message' => 'No se puede crear la puja porque debe ingresar mas dinero que la ultima puja',
-            ], 400);
         }
     }
 }
