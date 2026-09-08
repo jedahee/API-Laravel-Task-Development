@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use JWTAuth;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Tymon\JWTAuth\Exceptions\JWTException;
+use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -74,22 +72,17 @@ class AuthController extends Controller
             return response()->json(['error' => $validator->messages()], 400);
         }
 
-        //Intentamos hacer login
-        try {
-            if (!$token = JWTAuth::attempt($credentials)) {
-                //Credenciales incorrectas.
-                return response()->json(['message' => 'Login falló',], 401);
-            }
-        } catch (JWTException $e) {
-            //Error chungo
-            return response()->json(['message' => 'Error',], 500);
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            return response()->json(['message' => 'Login falló'], 401);
         }
 
         //Devolvemos el token
         return response()->json([
             'success' => true,
-            'token' => $token,
-            'user' => Auth::user()
+            'token' => $user->createToken('auth-token')->plainTextToken,
+            'user' => $user
         ]);
     }
 
@@ -101,31 +94,12 @@ class AuthController extends Controller
 
     */
     public function logout(Request $request) {
-        //Validamos que se nos envie el token
-        $validator = Validator::make($request->only('token'),
-            ['token' => 'required']
-        );
-        //Si falla la validación
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->messages()], 400);
-        }
-        try {
-            //Si el token es valido eliminamos el token desconectando al usuario.
+        $request->user()->currentAccessToken()->delete();
 
-            JWTAuth::invalidate($request->token);
-            return response()->json([
-                'success' => true,
-                'message' => 'Usuario desconectado'
-            ]);
-
-        } catch (JWTException $exception) {
-
-            //Error chungo
-            return response()->json([
-            'success' => false,
-            'message' => 'Error'
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuario desconectado'
+        ], Response::HTTP_OK);
     }
 
     /*
@@ -137,13 +111,8 @@ class AuthController extends Controller
     */
 
     public function getUser(Request $request) {
-        //Validamos que la request tenga el token
-        $this->validate($request, [
-            'token' => 'required'
-        ]);
-
         //Realizamos la autentificación
-        $user = JWTAuth::authenticate($request->token);
+        $user = $request->user('sanctum');
 
         //Si no hay usuario es que el token no es valido o que ha expirado
         if(!$user)

@@ -26,7 +26,7 @@ Route::get('productos/{id}', [ProductoController::class, 'show']);
 
 Route::get('pujas', [PujaController::class, 'index']);
 
-Route::group(['middleware' => ['jwt.verify']], function() {
+Route::group(['middleware' => ['auth:sanctum']], function() {
     //Todo lo que este dentro de este grupo requiere verificación de usuario.
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('get-user', [AuthController::class, 'getUser']);

@@ -7,7 +7,6 @@ use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\Puja;
 use Illuminate\Http\Request;
-use JWTAuth;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -18,9 +17,7 @@ class ProductoController extends Controller
 
     public function __construct(Request $request)
     {
-        $token = $request->header('Authorization');
-        if($token != '')
-            $this->user = JWTAuth::parseToken()->authenticate();
+        $this->user = $request->user('sanctum');
     }
 
     /**

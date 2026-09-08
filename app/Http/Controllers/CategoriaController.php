@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use App\Models\Producto;
 use Illuminate\Http\Request;
-use JWTAuth;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,9 +15,7 @@ class CategoriaController extends Controller
 
     public function __construct(Request $request)
     {
-        $token = $request->header('Authorization');
-        if($token != '')
-            $this->user = JWTAuth::parseToken()->authenticate();
+        $this->user = $request->user('sanctum');
     }
     /**
     * Display a listing of the resource.

@@ -8,7 +8,6 @@ use App\Models\Producto;
 use App\Models\Puja;
 use Illuminate\Http\Request;
 use DB;
-use JWTAuth;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -18,9 +17,7 @@ class PujaController extends Controller
 
     public function __construct(Request $request)
     {
-        $token = $request->header('Authorization');
-        if($token != '')
-            $this->user = JWTAuth::parseToken()->authenticate();
+        $this->user = $request->user('sanctum');
     }
 
     public function listarPujasDeProducto($id, $num = -1) {
